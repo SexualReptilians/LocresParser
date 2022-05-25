@@ -21,6 +21,7 @@ end
 
 
 local buf = Buffer:new(assert(fs.readFileSync(LOCRES_FILE)))
+local tag = os.date("%Y-%m-%d", fs.statSync(LOCRES_FILE).mtime.sec)   -- YYYY-mm-dd
 
 -- check header if file is a proper locres file
 local MAGIC = "\x0E\x14\x74\x75\x67\x4A\x03\xFC"
@@ -65,7 +66,7 @@ local keys = {}
 local namespaceCount = buf:readUInt32LE(0x1D + 1)
 pos = 0x21 + 1
 
-for i = 1, namespaceCount do
+for _ = 1, namespaceCount do
     local nsHash = buf:readUInt32LE(pos); pos = pos + 4;
     local nsNameLen = buf:readInt32LE(pos); pos = pos + 4;
     local nsName
@@ -77,7 +78,7 @@ for i = 1, namespaceCount do
     end
     local nsItems = buf:readUInt32LE(pos); pos = pos + 4;
 
-    for j = 1, nsItems do
+    for _ = 1, nsItems do
         local key
         local isUtf16 = false
         local keyHash1 = buf:readUInt32LE(pos); pos = pos + 4;
@@ -90,7 +91,7 @@ for i = 1, namespaceCount do
         else
             key = buf:toString(pos, pos + keyLen-1 - 1); pos = pos + keyLen;
         end
-        
+
         local keyHash2 = buf:readUInt32LE(pos); pos = pos + 4;
         local valueId = buf:readUInt32LE(pos); pos = pos + 4;
 
@@ -107,7 +108,8 @@ end
 
 ----- Output -----
 
-local out = assert(io.open(LOCRES_FILE .. ".txt", 'wb'))
+-- use io.open for writing in chunks
+local out = assert(io.open(LOCRES_FILE .. "_" .. tag .. ".txt", 'wb'))
 
 for _, key in ipairs(keys) do
     local left
@@ -143,5 +145,6 @@ for _, key in ipairs(keys) do
 end
 
 out:close()
+
 
 print("Done.")
